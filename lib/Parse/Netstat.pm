@@ -103,6 +103,49 @@ __END__
  my $output = `netstat -anp`;
  my $res = parse_netstat output => $output;
 
+Sample result:
+
+ [
+  200,
+  "OK",
+  {
+    active_conns => [
+      {
+        foreign_host => "0.0.0.0",
+        foreign_port => "*",
+        local_host => "127.0.0.1",
+        local_port => 1027,
+        proto => "tcp",
+        recvq => 0,
+        sendq => 0,
+        state => "LISTEN",
+      },
+      ...
+      {
+        foreign_host => "0.0.0.0",
+        foreign_port => "*",
+        local_host => "192.168.0.103",
+        local_port => 56668,
+        proto => "udp",
+        recvq => 0,
+        sendq => 0,
+      },
+      ...
+      {
+        flags   => "ACC",
+        inode   => 15631,
+        path    => "\@/tmp/dbus-VS3SLhDMEu",
+        pid     => 4513,
+        program => "dbus-daemon",
+        proto   => "unix",
+        refcnt  => 2,
+        state   => "LISTENING",
+        type    => "STREAM",
+      },
+    ],
+  }
+ ]
+
 
 =head1 DESCRIPTION
 

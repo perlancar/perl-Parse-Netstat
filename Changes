@@ -1,5 +1,10 @@
 Revision history for Parse-Netstat
 
+0.03    2011-09-29
+
+        Fix parsing: allow whitespace in 'program' field.
+
+
 0.02    2011-09-29
 
         No functional changes. Add sample result in Synopsis.

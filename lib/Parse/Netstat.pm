@@ -57,7 +57,7 @@ sub parse_netstat {
                        (?<local_host>\S+?):(?<local_port>\w+)\s+
                        (?<foreign_host>\S+?):(?<foreign_port>\w+|\*)\s+
                        (?<state>\S+) (?: \s+ (?:
-                               (?<pid>\d+)/(?<program>\S+) |
+                               (?<pid>\d+)/(?<program>.+?) |
                                -
                        ))? \s*$!x
                            or return [400, "Invalid tcp line (#$i): $line"];
@@ -68,7 +68,7 @@ sub parse_netstat {
                        (?<local_host>\S+?):(?<local_port>\w+)\s+
                        (?<foreign_host>\S+?):(?<foreign_port>\w+|\*)\s+
                        (?: \s+ (?:
-                               (?<pid>\d+)/(?<program>\S+) |
+                               (?<pid>\d+)/(?<program>.+?) |
                                -
                        ))? \s*$!x
                            or return [400, "Invalid udp line (#$i): $line"];
@@ -79,7 +79,7 @@ sub parse_netstat {
             $line =~ m!^(?<proto>unix) \s+ (?<refcnt>\d+) \s+
                        \[\s*(?<flags>\S*)\s*\] \s+ (?<type>\S+) \s+
                        (?<state>\S+|\s+) \s+ (?<inode>\d+) \s+
-                       (?: (?: (?<pid>\d+)/(?<program>\S+) | - ) \s+)?
+                       (?: (?: (?<pid>\d+)/(?<program>.+?) | - ) \s+)?
                        (?<path>.*?)\s*$!x
                            or return [400, "Invalid unix line (#$i): $line"];
             %k = %+;

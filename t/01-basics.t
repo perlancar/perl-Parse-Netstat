@@ -10,7 +10,7 @@ my $data = <<'_';
 Active Internet connections (servers and established)
 Proto Recv-Q Send-Q Local Address               Foreign Address             State       PID/Program name
 tcp        0      0 127.0.0.1:1027              0.0.0.0:*                   LISTEN      -
-tcp        0      0 127.0.0.1:48397             0.0.0.0:*                   LISTEN      -
+tcp        0      0 builder.localdomain:1028    *:*                         LISTEN
 tcp        0      0 127.0.0.1:58159             0.0.0.0:*                   LISTEN      -
 tcp        0      0 127.0.0.1:58160             0.0.0.0:*                   LISTEN      -
 tcp        0      0 127.0.0.1:7634              0.0.0.0:*                   LISTEN      -

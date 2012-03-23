@@ -1,5 +1,10 @@
 Revision history for Parse-Netstat
 
+0.04    2012-03-23
+
+        No functional changes. Replace Sub::Spec with Rinci.
+
+
 0.03    2011-09-29
 
         Fix parsing: allow whitespace in 'program' field.

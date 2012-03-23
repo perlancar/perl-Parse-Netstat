@@ -152,11 +152,6 @@ Sample result:
 This module provides parse_netstat().
 
 
-=head1 FUNCTIONS
-
-None are exported by default, but they are exportable.
-
-
 =head1 SEE ALSO
 
 =cut

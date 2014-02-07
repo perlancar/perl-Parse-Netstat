@@ -6,6 +6,8 @@ use warnings;
 
 use Perinci::CmdLine;
 
+# VERSION
+
 Perinci::CmdLine->new(url => '/Parse/Netstat/parse_netstat')->run;
 
 # ABSTRACT: Parse output of 'netstat' command

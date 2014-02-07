@@ -1,5 +1,14 @@
 Revision history for Parse-Netstat
 
+0.05    2014-02-07 (SHARYANTO)
+
+        - Fix parsing UDP line (state was not parsed).
+
+        - Add command-line script: parse-netstat.
+
+        - Minor updates and tweaks.
+
+
 0.04    2012-03-23 (SHARYANTO)
 
         - No functional changes. Replace Sub::Spec with Rinci.

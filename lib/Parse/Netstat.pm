@@ -4,8 +4,6 @@ use 5.010001;
 use strict;
 use warnings;
 
-use Regexp::IPv6 qw($IPv6_re);
-
 use Exporter;
 our @ISA = qw(Exporter);
 our @EXPORT_OK = qw(parse_netstat);

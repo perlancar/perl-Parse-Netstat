@@ -4,6 +4,8 @@ use 5.010001;
 use strict;
 use warnings;
 
+use Regexp::IPv6 qw($IPv6_re);
+
 use Exporter;
 our @ISA = qw(Exporter);
 our @EXPORT_OK = qw(parse_netstat);
@@ -14,7 +16,15 @@ our %SPEC;
 
 $SPEC{parse_netstat} = {
     v => 1.1,
-    summary => 'Parse the output of Unix "netstat" command',
+    summary => 'Parse the output of Unix "netstat -np | -anp" command',
+    description => <<'_',
+
+Netstat can be called with `-n` (show raw IP addresses and port numbers instead
+of hostnames or port names) or without. It can be called with `-a` (show all
+listening and non-listening socket) option or without. And can be called with
+`-p` (show PID/program names) or without.
+
+_
     args => {
         output => {
             summary => 'Output of netstat command',
@@ -30,15 +40,15 @@ _
             cmdline_src => 'stdin_or_files',
         },
         tcp => {
-            summary => 'Whether to parse tcp connections',
+            summary => 'Whether to parse TCP (and TCP6) connections',
             schema  => [bool => default => 1],
         },
         udp => {
-            summary => 'Whether to parse udp connections',
+            summary => 'Whether to parse UDP (and UDP6) connections',
             schema  => [bool => default => 1],
         },
         unix => {
-            summary => 'Whether to parse unix connections',
+            summary => 'Whether to parse Unix socket connections',
             schema  => [bool => default => 1],
         },
     },
@@ -58,35 +68,35 @@ sub parse_netstat {
         if ($line =~ /^tcp/ && $tcp) {
             #Proto Recv-Q Send-Q Local Address               Foreign Address             State       PID/Program name
             #tcp        0      0 0.0.0.0:8898                0.0.0.0:*                   LISTEN      5566/daemon2.pl [pa
-            $line =~ m!^(?<proto>tcp) \s+ (?<recvq>\d+) \s+ (?<sendq>\d+)\s+
-                       (?<local_host>\S+?):(?<local_port>\w+)\s+
-                       (?<foreign_host>\S+?):(?<foreign_port>\w+|\*)\s+
-                       (?<state>\S+) (?: \s+ (?:
-                               (?<pid>\d+)/(?<program>.+?) |
+            $line =~ m!^(?P<proto>tcp6?) \s+ (?P<recvq>\d+) \s+ (?P<sendq>\d+)\s+
+                       (?P<local_host>\S+?):(?P<local_port>\w+)\s+
+                       (?P<foreign_host>\S+?):(?P<foreign_port>\w+|\*)\s+
+                       (?P<state>\S+) (?: \s+ (?:
+                               (?P<pid>\d+)/(?P<program>.+?) |
                                -
                        ))? \s*$!x
-                           or return [400, "Invalid tcp line (#$i): $line"];
+                           or return [400, "Can't parse tcp line (#$i): $line"];
             %k = %+;
         } elsif ($line =~ /^udp/ && $udp) {
             #udp        0      0 0.0.0.0:631                 0.0.0.0:*                               2769/cupsd
-            $line =~ m!^(?<proto>udp) \s+ (?<recvq>\d+) \s+ (?<sendq>\d+)\s+
-                       (?<local_host>\S+?):(?<local_port>\w+)\s+
-                       (?<foreign_host>\S+?):(?<foreign_port>\w+|\*)\s+
-                       (?: \s+ (?:
-                               (?<pid>\d+)/(?<program>.+?) |
+            $line =~ m!^(?P<proto>udp6?) \s+ (?P<recvq>\d+) \s+ (?P<sendq>\d+)\s+
+                       (?P<local_host>\S+?):(?P<local_port>\w+)\s+
+                       (?P<foreign_host>\S+?):(?P<foreign_port>\w+|\*)\s+
+                       (?P<state>\S+)? (?: \s+ (?:
+                               (?P<pid>\d+)/(?P<program>.+?) |
                                -
                        ))? \s*$!x
-                           or return [400, "Invalid udp line (#$i): $line"];
+                           or return [400, "Can't parse udp line (#$i): $line"];
             %k = %+;
         } elsif ($line =~ /^unix/ && $unix) {
             #Proto RefCnt Flags       Type       State         I-Node PID/Program name    Path
             #    unix  2      [ ACC ]     STREAM     LISTENING     650654 30463/gconfd-2      /tmp/orbit-t1/linc-76ff-0-3fc1dd3f2f2
-            $line =~ m!^(?<proto>unix) \s+ (?<refcnt>\d+) \s+
-                       \[\s*(?<flags>\S*)\s*\] \s+ (?<type>\S+) \s+
-                       (?<state>\S+|\s+) \s+ (?<inode>\d+) \s+
-                       (?: (?: (?<pid>\d+)/(?<program>.+?) | - ) \s+)?
-                       (?<path>.*?)\s*$!x
-                           or return [400, "Invalid unix line (#$i): $line"];
+            $line =~ m!^(?P<proto>unix) \s+ (?P<refcnt>\d+) \s+
+                       \[\s*(?P<flags>\S*)\s*\] \s+ (?P<type>\S+) \s+
+                       (?P<state>\S+|\s+) \s+ (?P<inode>\d+) \s+
+                       (?: (?: (?P<pid>\d+)/(?P<program>.+?) | - ) \s+)?
+                       (?P<path>.*?)\s*$!x
+                           or return [400, "Can't parse unix line (#$i): $line"];
             %k = %+;
         } else {
             next;

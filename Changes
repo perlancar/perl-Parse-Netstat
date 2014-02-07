@@ -1,5 +1,13 @@
 Revision history for Parse-Netstat
 
+0.06    2014-02-07 (SHARYANTO)
+
+        - Add support for parsing output of Windows netstat (thanks Chris
+          Rettger).
+
+        - Add command-line script: parse-netstat-win.
+
+
 0.05    2014-02-07 (SHARYANTO)
 
         - Fix parsing UDP line (state was not parsed).

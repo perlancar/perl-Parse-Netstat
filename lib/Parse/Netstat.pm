@@ -4,7 +4,8 @@ use 5.010001;
 use strict;
 use warnings;
 
-use Exporter::Lite;
+use Exporter;
+our @ISA = qw(Exporter);
 our @EXPORT_OK = qw(parse_netstat);
 
 # VERSION
@@ -12,10 +13,10 @@ our @EXPORT_OK = qw(parse_netstat);
 our %SPEC;
 
 $SPEC{parse_netstat} = {
+    v => 1.1,
     summary => 'Parse the output of Unix "netstat" command',
     args => {
-        output => ['str*' => {
-            arg_pos => 0,
+        output => {
             summary => 'Output of netstat command',
             description => <<'_',
 
@@ -23,19 +24,23 @@ This function only parses program's output. You need to invoke "netstat" on your
 own.
 
 _
-        }],
-        tcp => ['bool' => {
+            schema => 'str*',
+            pos => 0,
+            req => 1,
+            cmdline_src => 'stdin_or_files',
+        },
+        tcp => {
             summary => 'Whether to parse tcp connections',
-            default => 1,
-        }],
-        udp => ['bool' => {
+            schema  => [bool => default => 1],
+        },
+        udp => {
             summary => 'Whether to parse udp connections',
-            default => 1,
-        }],
-        unix => ['bool' => {
+            schema  => [bool => default => 1],
+        },
+        unix => {
             summary => 'Whether to parse unix connections',
-            default => 1,
-        }],
+            schema  => [bool => default => 1],
+        },
     },
 };
 sub parse_netstat {

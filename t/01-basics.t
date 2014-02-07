@@ -3,7 +3,7 @@
 use 5.010;
 use strict;
 use warnings;
-use Parse::Netstat qw(parse_netstat);
+use Parse::Netstat qw(parse_netstat parse_netstat_win);
 use Test::More 0.98;
 
 my $data = <<'_';
@@ -18,9 +18,11 @@ tcp        0      0 0.0.0.0:22                  0.0.0.0:*                   LIST
 tcp        0      0 0.0.0.0:631                 0.0.0.0:*                   LISTEN      -
 tcp        0      0 127.0.0.1:25                0.0.0.0:*                   LISTEN      1234/program with space
 tcp        0      0 192.168.0.103:44922         1.2.3.4:143                 ESTABLISHED 25820/thunderbird-b
+tcp6       0      0 ::1:1028                    :::*                        LISTEN      -
 udp        0      0 0.0.0.0:631                 0.0.0.0:*                               -
 udp        0      0 192.168.0.103:56668         0.0.0.0:*                               -
 udp        0      0 192.168.0.103:52753         0.0.0.0:*                               8888/opera
+udp6       0      0 :::42069                    :::*                                    -
 Active UNIX domain sockets (servers and established)
 Proto RefCnt Flags       Type       State         I-Node PID/Program name    Path
 unix  2      [ ]         DGRAM                    6906   -                   /var/spool/postfix/dev/log
@@ -31,12 +33,19 @@ _
 sub test_parse {
     my (%args) = @_;
     my $name = $args{name};
-    my $data = $args{data} // $data;
+    my $data = $args{data};
 
     subtest $name => sub {
         my $res;
         my $eval_err;
-        eval { $res = parse_netstat(output => $data, %{$args{args} // {}}) };
+        eval {
+            my %fargs = (output => $data, %{$args{args} // {}});
+            if ($args{win}) {
+                $res = parse_netstat_win(%fargs);
+            } else {
+                $res = parse_netstat(%fargs);
+            }
+        };
         $eval_err = $@;
 
         if ($args{dies}) {
@@ -49,12 +58,13 @@ sub test_parse {
             is($res->[0], $args{status}, "result");
         }
 
+        #diag explain $res;
         if ($res->[0] == 200) {
             my $parsed = $res->[2];
             my $conns  = $parsed->{active_conns};
-            my $num_tcp  = grep {$_->{proto} eq 'tcp'}  @$conns;
-            my $num_udp  = grep {$_->{proto} eq 'udp'}  @$conns;
-            my $num_unix = grep {$_->{proto} eq 'unix'} @$conns;
+            my $num_tcp  = grep {$_->{proto} =~ /tcp6?/}  @$conns;
+            my $num_udp  = grep {$_->{proto} =~ /udp6?/}  @$conns;
+            my $num_unix = grep {$_->{proto} =~ /unix/} @$conns;
             if (defined $args{num_tcp}) {
                 is($num_tcp, $args{num_tcp}, "num_tcp=$args{num_tcp}");
             }
@@ -64,6 +74,8 @@ sub test_parse {
             if (defined $args{num_unix}) {
                 is($num_unix, $args{num_unix}, "num_unix=$args{num_unix}");
             }
+        } else {
+            ok(0, "result is not 200 ($res->[0])");
         }
 
         if ($args{post_parse}) {
@@ -72,11 +84,47 @@ sub test_parse {
     };
 }
 
+test_parse(name=>'all', data=>$data, num_tcp=>10, num_udp=>4, num_unix=>3);
+test_parse(name=>'no tcp', data=>$data, args=>{tcp=>0}, num_tcp=>0, num_udp=>4, num_unix=>3);
+test_parse(name=>'no udp', data=>$data, args=>{udp=>0}, num_tcp=>10, num_udp=>0, num_unix=>3);
+test_parse(name=>'no unix', data=>$data, args=>{unix=>0}, num_tcp=>10, num_udp=>4, num_unix=>0);
 
-test_parse(name=>'all', num_tcp=>9, num_udp=>3, num_unix=>3);
-test_parse(name=>'no tcp', args=>{tcp=>0}, num_tcp=>0, num_udp=>3, num_unix=>3);
-test_parse(name=>'no udp', args=>{udp=>0}, num_tcp=>9, num_udp=>0, num_unix=>3);
-test_parse(name=>'no unix', args=>{unix=>0}, num_tcp=>9, num_udp=>3, num_unix=>0);
+$data = <<'_';
+
+Active Connections
+
+  Proto  Local Address          Foreign Address        State           PID
+  TCP    0.0.0.0:135            0.0.0.0:0              LISTENING       988
+  c:\windows\system32\WS2_32.dll
+  C:\WINDOWS\system32\RPCRT4.dll
+  c:\windows\system32\rpcss.dll
+  C:\WINDOWS\system32\svchost.exe
+  -- unknown component(s) --
+  [svchost.exe]
+
+  TCP    0.0.0.0:445            0.0.0.0:0              LISTENING       4
+  [System]
+
+  TCP    127.0.0.1:1027         0.0.0.0:0              LISTENING       1244
+  [alg.exe]
+
+  TCP    192.168.0.104:139      0.0.0.0:0              LISTENING       4
+  [System]
+
+  UDP    0.0.0.0:1025           *:*                                    1120
+  C:\WINDOWS\system32\mswsock.dll
+  c:\windows\system32\WS2_32.dll
+  c:\windows\system32\DNSAPI.dll
+  c:\windows\system32\dnsrslvr.dll
+  C:\WINDOWS\system32\RPCRT4.dll
+  [svchost.exe]
+
+  UDP    0.0.0.0:500            *:*                                    696
+  [lsass.exe]
+
+_
+
+test_parse(name=>'all win', win=>1, data=>$data, num_tcp=>4, num_udp=>2);
 
 DONE_TESTING:
 done_testing();

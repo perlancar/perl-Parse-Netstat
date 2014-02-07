@@ -176,6 +176,7 @@ sub parse_netstat_win {
                            or return [400, "Can't parse tcp line (#$i): $line"];
             $k = { %+ };
             $cur = 'tcp';
+            for ($k->{proto}) { $_ = lc }
             push @conns, $k;
         } elsif ($line =~ /^\s*UDP\s/ && $udp) {
             #  UDP    0.0.0.0:500            *:*                                    696
@@ -191,6 +192,7 @@ sub parse_netstat_win {
                            or return [400, "Can't parse udp line (#$i): $line"];
             $k = { %+ };
             $cur = 'udp';
+            for ($k->{proto}) { $_ = lc }
             push @conns, $k;
         } elsif ($cur) {
             $k->{execs} //= [];

@@ -52,6 +52,12 @@ _
             schema  => [bool => default => 1],
         },
     },
+    examples => [
+        {
+            src => 'netstat -anp | parse-netstat',
+            src_plang => 'bash',
+        },
+    ],
 };
 sub parse_netstat {
     my %args = @_;

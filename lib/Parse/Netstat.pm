@@ -74,7 +74,7 @@ sub parse_netstat {
         if ($line =~ /^tcp/ && $tcp) {
             #Proto Recv-Q Send-Q Local Address               Foreign Address             State       PID/Program name
             #tcp        0      0 0.0.0.0:8898                0.0.0.0:*                   LISTEN      5566/daemon2.pl [pa
-            $line =~ m!^(?P<proto>tcp6?) \s+ (?P<recvq>\d+) \s+ (?P<sendq>\d+)\s+
+            $line =~ m!^(?P<proto>tcp[46]?) \s+ (?P<recvq>\d+) \s+ (?P<sendq>\d+)\s+
                        (?P<local_host>\S+?):(?P<local_port>\w+)\s+
                        (?P<foreign_host>\S+?):(?P<foreign_port>\w+|\*)\s+
                        (?P<state>\S+) (?: \s+ (?:
@@ -85,7 +85,7 @@ sub parse_netstat {
             %k = %+;
         } elsif ($line =~ /^udp/ && $udp) {
             #udp        0      0 0.0.0.0:631                 0.0.0.0:*                               2769/cupsd
-            $line =~ m!^(?P<proto>udp6?) \s+ (?P<recvq>\d+) \s+ (?P<sendq>\d+)\s+
+            $line =~ m!^(?P<proto>udp[46]?) \s+ (?P<recvq>\d+) \s+ (?P<sendq>\d+)\s+
                        (?P<local_host>\S+?):(?P<local_port>\w+)\s+
                        (?P<foreign_host>\S+?):(?P<foreign_port>\w+|\*)\s+
                        (?P<state>\S+)? (?: \s+ (?:

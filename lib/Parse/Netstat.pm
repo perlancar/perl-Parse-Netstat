@@ -66,6 +66,8 @@ sub parse_netstat {
     my $udp    = $args{udp} // 1;
     my $unix   = $args{unix} // 1;
 
+    my $in_unix;
+    my $in_unix_header;
     my @conns;
     my $i = 0;
     for my $line (split /^/, $output) {
@@ -74,9 +76,12 @@ sub parse_netstat {
         if ($line =~ /^tcp/ && $tcp) {
             #Proto Recv-Q Send-Q Local Address               Foreign Address             State       PID/Program name
             #tcp        0      0 0.0.0.0:8898                0.0.0.0:*                   LISTEN      5566/daemon2.pl [pa
+
+            # freebsd version:
+            #tcp4       0      0 192.168.1.33.632       192.168.1.10.2049      CLOSED
             $line =~ m!^(?P<proto>tcp[46]?) \s+ (?P<recvq>\d+) \s+ (?P<sendq>\d+)\s+
-                       (?P<local_host>\S+?):(?P<local_port>\w+)\s+
-                       (?P<foreign_host>\S+?):(?P<foreign_port>\w+|\*)\s+
+                       (?P<local_host>\S+?)[:.](?P<local_port>\w+)\s+
+                       (?P<foreign_host>\S+?)[:.](?P<foreign_port>\w+|\*)\s+
                        (?P<state>\S+) (?: \s+ (?:
                                (?P<pid>\d+)/(?P<program>.+?) |
                                -
@@ -85,25 +90,52 @@ sub parse_netstat {
             %k = %+;
         } elsif ($line =~ /^udp/ && $udp) {
             #udp        0      0 0.0.0.0:631                 0.0.0.0:*                               2769/cupsd
-            $line =~ m!^(?P<proto>udp[46]?) \s+ (?P<recvq>\d+) \s+ (?P<sendq>\d+)\s+
-                       (?P<local_host>\S+?):(?P<local_port>\w+)\s+
-                       (?P<foreign_host>\S+?):(?P<foreign_port>\w+|\*)\s+
-                       (?P<state>\S+)? (?: \s+ (?:
-                               (?P<pid>\d+)/(?P<program>.+?) |
-                               -
-                       ))? \s*$!x
+            # freebsd version:
+            #udp4       0      0 *.879                  *.*
+            $line =~ m!^(?P<proto>udp[46]?) \s+ (?P<recvq>\d+) \s+ (?P<sendq>\d+) \s+
+                       (?P<local_host>\S+?)[:.](?P<local_port>\w+|\*)\s+
+                       (?P<foreign_host>\S+?)[:.](?P<foreign_port>\w+|\*)
+                       (?: \s+
+                           (?P<state>\S+)?
+                           (?: \s+ (?:
+                                   (?P<pid>\d+)/(?P<program>.+?) |
+                                   -
+                           ))?
+                       )? \s*$!x
                            or return [400, "Can't parse udp line (#$i): $line"];
             %k = %+;
-        } elsif ($line =~ /^unix/ && $unix) {
-            #Proto RefCnt Flags       Type       State         I-Node PID/Program name    Path
-            #    unix  2      [ ACC ]     STREAM     LISTENING     650654 30463/gconfd-2      /tmp/orbit-t1/linc-76ff-0-3fc1dd3f2f2
-            $line =~ m!^(?P<proto>unix) \s+ (?P<refcnt>\d+) \s+
-                       \[\s*(?P<flags>\S*)\s*\] \s+ (?P<type>\S+) \s+
-                       (?P<state>\S+|\s+) \s+ (?P<inode>\d+) \s+
-                       (?: (?: (?P<pid>\d+)/(?P<program>.+?) | - ) \s+)?
-                       (?P<path>.*?)\s*$!x
-                           or return [400, "Can't parse unix line (#$i): $line"];
-            %k = %+;
+        } elsif (($line =~ /^unix/ || $in_unix) && $unix) {
+            if ($line =~ /^unix/) {
+                #Proto RefCnt Flags       Type       State         I-Node PID/Program name    Path
+                #    unix  2      [ ACC ]     STREAM     LISTENING     650654 30463/gconfd-2      /tmp/orbit-t1/linc-76ff-0-3fc1dd3f2f2
+                $line =~ m!^(?P<proto>unix) \s+ (?P<refcnt>\d+) \s+
+                           \[\s*(?P<flags>\S*)\s*\] \s+ (?P<type>\S+) \s+
+                           (?P<state>\S+|\s+) \s+ (?P<inode>\d+) \s+
+                           (?: (?: (?P<pid>\d+)/(?P<program>.+?) | - ) \s+)?
+                           (?P<path>.*?)\s*$!x
+                               or return [400, "Can't parse unix line (#$i): $line"];
+                %k = %+;
+            } else {
+                # freebsd's output
+                #Address  Type   Recv-Q Send-Q    Inode     Conn     Refs  Nextref Addr
+                #fffffe00029912d0 stream      0      0 fffffe0002d8abd0        0        0        0 /tmp/ssh-zwZwlpzaip/agent.1089
+                $line =~ m!^(?P<address>\S+) \s+ (?P<type>\S+) \s+
+                           (?P<recvq>\d+) \s+ (?P<sendq>\d+) \s+ (?P<inode>[0-9a-f]+) \s+ (?P<conn>[0-9a-f]+) \s+
+                           (?P<refs>[0-9a-f]+) \s+ (?P<nextref>[0-9a-f]+)
+                           (?:
+                               \s+
+                               (?P<addr>.+)
+                           )?
+                           \s*$!x
+                               or return [400, "Can't parse unix/freebsd line (#$i): $line"];
+                %k = %+;
+                $k{proto} = 'unix';
+            }
+        } elsif ($in_unix_header) {
+            $in_unix_header = 0;
+            $in_unix++;
+        } elsif ($line =~ /^Active UNIX domain sockets/) {
+            $in_unix_header++;
         } else {
             next;
         }

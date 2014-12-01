@@ -75,6 +75,14 @@ subtest "freebsd" => sub {
     test_parse(name=>'no unix', args=>{flavor=>"freebsd", unix=>0}, data=>$data, num_tcp=>23, num_udp=>13, num_unix=> 0);
 };
 
+subtest "solaris" => sub {
+    my $data = read_file("$Bin/../share/netstat-samples/netstat-n-solaris");
+    test_parse(name=>'all'    , args=>{flavor=>"solaris"},          data=>$data, num_tcp=>6, num_udp=>3, num_unix=>11);
+    test_parse(name=>'no tcp' , args=>{flavor=>"solaris", tcp=>0},  data=>$data, num_tcp=>0, num_udp=>3, num_unix=>11);
+    test_parse(name=>'no udp' , args=>{flavor=>"solaris", udp=>0},  data=>$data, num_tcp=>6, num_udp=>0, num_unix=>11);
+    test_parse(name=>'no unix', args=>{flavor=>"solaris", unix=>0}, data=>$data, num_tcp=>6, num_udp=>3, num_unix=> 0);
+};
+
 subtest "win32" => sub {
     my $data = read_file("$Bin/../share/netstat-samples/netstat-anp-win32");
     test_parse(name=>'all'   , args=>{flavor=>"win32"},         data=>$data, num_tcp=>4, num_udp=>2);

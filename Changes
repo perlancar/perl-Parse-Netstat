@@ -1,5 +1,17 @@
 Revision history for Parse-Netstat
 
+0.10    2014-12-01 (PERLANCAR) (unreleased)
+
+        - Refactor into per-flavor modules (Parse::Netstat::{linux,freebsd,win32}).
+
+        - Add support for Solaris flavor of netstat [RT#100618].
+
+        - Include sample data and output in each flavor module's POD.
+
+        - Split CLI bin/parse-netstat to its own distribution App-ParseNetstat
+          to keep this distribution's dependencies small.
+
+
 0.09    2014-11-30 (PERLANCAR)
 
         - Parse FreeBSD (9.2, 10.1)'s output [RT#100607].

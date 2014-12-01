@@ -1,7 +1,7 @@
 package Parse::Netstat::linux;
 
-# VERSION
 # DATE
+# VERSION
 
 use 5.010001;
 use strict;

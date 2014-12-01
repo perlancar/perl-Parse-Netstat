@@ -1,14 +1,15 @@
 package Parse::Netstat::freebsd;
 
+# DATE
+# VERSION
+
 use 5.010001;
 use strict;
 use warnings;
 
 use Exporter;
 our @ISA = qw(Exporter);
-our @EXPORT_OK = qw(parse_netstat parse_netstat_win);
-
-# VERSION
+our @EXPORT_OK = qw(parse_netstat);
 
 our %SPEC;
 
@@ -119,9 +120,9 @@ sub parse_netstat {
 =head1 SYNOPSIS
 
  use Parse::Netstat qw(parse_netstat);
- my $res = parse_netstat(output=>join("", `netstat -anp`), flavor=>"freebsd");
+ my $res = parse_netstat(output=>join("", `netstat -an`), flavor=>"freebsd");
 
-Sample `netstat -anp` output:
+Sample `netstat -an` output:
 
 # EXAMPLE: share/netstat-samples/netstat-an-freebsd-10.1
 

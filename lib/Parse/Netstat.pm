@@ -1,28 +1,29 @@
 package Parse::Netstat;
 
+# DATE
+# VERSION
+
 use 5.010001;
 use strict;
 use warnings;
 
-use Exporter;
+require Exporter;
 our @ISA = qw(Exporter);
-our @EXPORT_OK = qw(parse_netstat parse_netstat_win);
-
-# VERSION
+our @EXPORT_OK = qw(parse_netstat);
 
 our %SPEC;
 
 $SPEC{parse_netstat} = {
     v => 1.1,
-    summary => 'Parse the output of Unix "netstat" command',
+    summary => 'Parse the output of "netstat" command',
     description => <<'_',
 
-Netstat can be called with `-n` (show raw IP addresses and port numbers instead
-of hostnames or port names) or without. It can be called with `-a` (show all
-listening and non-listening socket) option or without. And can be called with
-`-p` (show PID/program names) or without.
+This program support several flavors of netstat. The default flavor is `linux`.
+See `--flavor` on how to set flavor.
 
-For parsing output of Windows "netstat", see parse_netstat_win().
+Since different flavors provide different fields and same-named fields might
+contain data in different format, please see the sample parse output for each
+flavor you want to support and adjust accordingly.
 
 _
     args => {
@@ -39,12 +40,28 @@ _
             req => 1,
             cmdline_src => 'stdin_or_files',
         },
+        flavor => {
+            summary => 'Flavor of netstat',
+            schema  => ['str*', in => ['linux', 'solaris', 'freebsd', 'win32']],
+            default => 'linux',
+            description => <<'_',
+
+For Linux, it supports the output of `netstat -an` or `netstat -anp`.
+
+For FreeBSD, it supports `netstat` or `netstat -an`.
+
+For Solaris, it supports `netstat`.
+
+For Windows, it supports `netstat` or `netstat -an` or `netstat -anp`.
+
+_
+        },
         tcp => {
-            summary => 'Whether to parse TCP (and TCP6) connections',
+            summary => 'Whether to parse TCP connections',
             schema  => [bool => default => 1],
         },
         udp => {
-            summary => 'Whether to parse UDP (and UDP6) connections',
+            summary => 'Whether to parse UDP connections',
             schema  => [bool => default => 1],
         },
         unix => {
@@ -61,245 +78,45 @@ _
 };
 sub parse_netstat {
     my %args = @_;
+
     my $output = $args{output} or return [400, "Please specify output"];
     my $tcp    = $args{tcp} // 1;
     my $udp    = $args{udp} // 1;
     my $unix   = $args{unix} // 1;
+    my $flavor = $args{flavor} // 'linux';
 
-    my $in_unix;
-    my $in_unix_header;
-    my @conns;
-    my $i = 0;
-    for my $line (split /^/, $output) {
-        $i++;
-        my %k;
-        if ($line =~ /^tcp/ && $tcp) {
-            #Proto Recv-Q Send-Q Local Address               Foreign Address             State       PID/Program name
-            #tcp        0      0 0.0.0.0:8898                0.0.0.0:*                   LISTEN      5566/daemon2.pl [pa
-
-            # freebsd version:
-            #tcp4       0      0 192.168.1.33.632       192.168.1.10.2049      CLOSED
-            $line =~ m!^(?P<proto>tcp[46]?) \s+ (?P<recvq>\d+) \s+ (?P<sendq>\d+)\s+
-                       (?P<local_host>\S+?)[:.](?P<local_port>\w+)\s+
-                       (?P<foreign_host>\S+?)[:.](?P<foreign_port>\w+|\*)\s+
-                       (?P<state>\S+) (?: \s+ (?:
-                               (?P<pid>\d+)/(?P<program>.+?) |
-                               -
-                       ))? \s*$!x
-                           or return [400, "Can't parse tcp line (#$i): $line"];
-            %k = %+;
-        } elsif ($line =~ /^udp/ && $udp) {
-            #udp        0      0 0.0.0.0:631                 0.0.0.0:*                               2769/cupsd
-            # freebsd version:
-            #udp4       0      0 *.879                  *.*
-            $line =~ m!^(?P<proto>udp[46]?) \s+ (?P<recvq>\d+) \s+ (?P<sendq>\d+) \s+
-                       (?P<local_host>\S+?)[:.](?P<local_port>\w+|\*)\s+
-                       (?P<foreign_host>\S+?)[:.](?P<foreign_port>\w+|\*)
-                       (?: \s+
-                           (?P<state>\S+)?
-                           (?: \s+ (?:
-                                   (?P<pid>\d+)/(?P<program>.+?) |
-                                   -
-                           ))?
-                       )? \s*$!x
-                           or return [400, "Can't parse udp line (#$i): $line"];
-            %k = %+;
-        } elsif (($line =~ /^unix/ || $in_unix) && $unix) {
-            if ($line =~ /^unix/) {
-                #Proto RefCnt Flags       Type       State         I-Node PID/Program name    Path
-                #    unix  2      [ ACC ]     STREAM     LISTENING     650654 30463/gconfd-2      /tmp/orbit-t1/linc-76ff-0-3fc1dd3f2f2
-                $line =~ m!^(?P<proto>unix) \s+ (?P<refcnt>\d+) \s+
-                           \[\s*(?P<flags>\S*)\s*\] \s+ (?P<type>\S+) \s+
-                           (?P<state>\S+|\s+) \s+ (?P<inode>\d+) \s+
-                           (?: (?: (?P<pid>\d+)/(?P<program>.+?) | - ) \s+)?
-                           (?P<path>.*?)\s*$!x
-                               or return [400, "Can't parse unix line (#$i): $line"];
-                %k = %+;
-            } else {
-                # freebsd's output
-                #Address  Type   Recv-Q Send-Q    Inode     Conn     Refs  Nextref Addr
-                #fffffe00029912d0 stream      0      0 fffffe0002d8abd0        0        0        0 /tmp/ssh-zwZwlpzaip/agent.1089
-                $line =~ m!^(?P<address>\S+) \s+ (?P<type>\S+) \s+
-                           (?P<recvq>\d+) \s+ (?P<sendq>\d+) \s+ (?P<inode>[0-9a-f]+) \s+ (?P<conn>[0-9a-f]+) \s+
-                           (?P<refs>[0-9a-f]+) \s+ (?P<nextref>[0-9a-f]+)
-                           (?:
-                               \s+
-                               (?P<addr>.+)
-                           )?
-                           \s*$!x
-                               or return [400, "Can't parse unix/freebsd line (#$i): $line"];
-                %k = %+;
-                $k{proto} = 'unix';
-            }
-        } elsif ($in_unix_header) {
-            $in_unix_header = 0;
-            $in_unix++;
-        } elsif ($line =~ /^Active UNIX domain sockets/) {
-            $in_unix_header++;
-        } else {
-            next;
-        }
-        push @conns, \%k;
+    if ($flavor eq 'linux') {
+        require Parse::Netstat::linux;
+        Parse::Netstat::linux::parse_netstat(
+            output=>$output, tcp=>$tcp, udp=>$udp, unix=>$unix);
+    } elsif ($flavor eq 'freebsd') {
+        require Parse::Netstat::freebsd;
+        Parse::Netstat::freebsd::parse_netstat(
+            output=>$output, tcp=>$tcp, udp=>$udp, unix=>$unix);
+    } elsif ($flavor eq 'solaris') {
+        require Parse::Netstat::solaris;
+        Parse::Netstat::solaris::parse_netstat(
+            output=>$output, tcp=>$tcp, udp=>$udp, unix=>$unix);
+    } elsif ($flavor eq 'win32') {
+        require Parse::Netstat::win32;
+        Parse::Netstat::win32::parse_netstat(
+            output=>$output, tcp=>$tcp, udp=>$udp);
+    } else {
+        return [400, "Unknown flavor '$flavor', please see --help"];
     }
-
-    [200, "OK", {active_conns => \@conns}];
-}
-
-$SPEC{parse_netstat_win} = {
-    v => 1.1,
-    summary => 'Parse the output of Windows "netstat" command',
-    description => <<'_',
-
-Netstat can be called with `-n` (show raw IP addresses and port numbers instead
-of hostnames or port names) or without. It can be called with `-a` (show all
-listening and non-listening socket) option or without. It can be called with
-`-o` (show PID) or without. And it can be called with `-b` (show executables) or
-not.
-
-For parsing output of Unix "netstat", see parse_netstat().
-
-_
-    args => {
-        output => {
-            summary => 'Output of netstat command',
-            description => <<'_',
-
-This function only parses program's output. You need to invoke "netstat" on your
-own.
-
-_
-            schema => 'str*',
-            pos => 0,
-            req => 1,
-            cmdline_src => 'stdin_or_files',
-        },
-        tcp => {
-            summary => 'Whether to parse TCP (and TCP6) connections',
-            schema  => [bool => default => 1],
-        },
-        udp => {
-            summary => 'Whether to parse UDP (and UDP6) connections',
-            schema  => [bool => default => 1],
-        },
-    },
-};
-sub parse_netstat_win {
-    my %args = @_;
-    my $output = $args{output} or return [400, "Please specify output"];
-    my $tcp    = $args{tcp} // 1;
-    my $udp    = $args{udp} // 1;
-
-    my @conns;
-    my $i = 0;
-    my $cur; # whether we're currently parsing TCP or UDP entry
-    my $k;
-    for my $line (split /^/, $output) {
-        $i++;
-        if ($line =~ /^\s*TCP\s/ && $tcp) {
-            #  Proto  Local Address          Foreign Address        State           PID
-            #  TCP    0.0.0.0:135            0.0.0.0:0              LISTENING       988
-            #  c:\windows\system32\WS2_32.dll
-            #  C:\WINDOWS\system32\RPCRT4.dll
-            #  c:\windows\system32\rpcss.dll
-            #  C:\WINDOWS\system32\svchost.exe
-            #  -- unknown component(s) --
-            #  [svchost.exe]
-            #
-            $line =~ m!^\s*(?P<proto>TCP6?) \s+
-                       (?P<local_host>\S+?):(?P<local_port>\w+)\s+
-                       (?P<foreign_host>\S+?):(?P<foreign_port>\w+|\*)\s+
-                       (?P<state>\S+) (?: \s+ (?:
-                               (?P<pid>\d+)
-                       ))? \s*$!x
-                           or return [400, "Can't parse tcp line (#$i): $line"];
-            $k = { %+ };
-            $cur = 'tcp';
-            for ($k->{proto}) { $_ = lc }
-            push @conns, $k;
-        } elsif ($line =~ /^\s*UDP\s/ && $udp) {
-            #  UDP    0.0.0.0:500            *:*                                    696
-            #  [lsass.exe]
-            #
-            # XXX state not yet parsed
-            $line =~ m!^\s*(?P<proto>UDP6?) \s+
-                       (?P<local_host>\S+?):(?P<local_port>\w+)\s+
-                       (?P<foreign_host>\S+?):(?P<foreign_port>\w+|\*)\s+
-                       (?: \s+ (?:
-                               (?P<pid>\d+)
-                       ))? \s*$!x
-                           or return [400, "Can't parse udp line (#$i): $line"];
-            $k = { %+ };
-            $cur = 'udp';
-            for ($k->{proto}) { $_ = lc }
-            push @conns, $k;
-        } elsif ($cur) {
-            $k->{execs} //= [];
-            next if $line =~ /^\s*--/; # e.g. -- unknown component(s) --
-            next if $line =~ /^\s*can not/i; # e.g.  Can not obtain ownership information
-            push @{ $k->{execs} }, $1 if $line =~ /^\s*(\S.*?)\s*$/;
-            next;
-        } else {
-            # a blank line or headers. ignore.
-        }
-    }
-
-    [200, "OK", {active_conns => \@conns}];
 }
 
 1;
-# ABSTRACT: Parse the output of "netstat" command
+# ABSTRACT: Parse netstat output
 
 =head1 SYNOPSIS
 
- use Parse::Netstat qw(parse_netstat parse_netstat_win);
-
- my $output = `netstat -anp`;
- my $res = parse_netstat output => $output;
-
-Sample result:
-
- [
-  200,
-  "OK",
-  {
-    active_conns => [
-      {
-        foreign_host => "0.0.0.0",
-        foreign_port => "*",
-        local_host => "127.0.0.1",
-        local_port => 1027,
-        proto => "tcp",
-        recvq => 0,
-        sendq => 0,
-        state => "LISTEN",
-      },
-      ...
-      {
-        foreign_host => "0.0.0.0",
-        foreign_port => "*",
-        local_host => "192.168.0.103",
-        local_port => 56668,
-        proto => "udp",
-        recvq => 0,
-        sendq => 0,
-      },
-      ...
-      {
-        flags   => "ACC",
-        inode   => 15631,
-        path    => "\@/tmp/dbus-VS3SLhDMEu",
-        pid     => 4513,
-        program => "dbus-daemon",
-        proto   => "unix",
-        refcnt  => 2,
-        state   => "LISTENING",
-        type    => "STREAM",
-      },
-    ],
-  }
- ]
+ use Parse::Netstat qw(parse_netstat);
+ my $res = parse_netstat(output => join("", `netstat -anp`), flavor=>'linux');
 
 
 =head1 SEE ALSO
 
-=cut
+Parse::Netstat::* for per-flavor notes and sample outputs.
+
+L<App::ParseNetstat> provides a CLI for this module.

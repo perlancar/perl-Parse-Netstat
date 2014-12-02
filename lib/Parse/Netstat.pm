@@ -49,17 +49,17 @@ _
         },
         tcp => {
             summary => 'Parse TCP connections',
-            'summary.alt.neg' => 'Do not parse TCP connections',
+            'summary.alt.bool.not' => 'Do not parse TCP connections',
             schema  => [bool => default => 1],
         },
         udp => {
             summary => 'Parse UDP connections',
-            'summary.alt.neg' => 'Do not parse UDP connections',
+            'summary.alt.bool.not' => 'Do not parse UDP connections',
             schema  => [bool => default => 1],
         },
         unix => {
             summary => 'Parse Unix socket connections',
-            'summary.alt.neg' => 'Do not parse Unix socket connections',
+            'summary.alt.bool.not' => 'Do not parse Unix socket connections',
             schema  => [bool => default => 1],
         },
     },

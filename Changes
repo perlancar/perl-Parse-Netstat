@@ -1,6 +1,14 @@
 Revision history for Parse-Netstat
 
-0.10    2014-12-01 (PERLANCAR) (unreleased)
+
+0.11    2014-12-02 (PERLANCAR)
+
+        - No functional changes.
+
+        - Tweak Rinci metadata (add negative summary for CLI).
+
+
+0.10    2014-12-01 (PERLANCAR)
 
         - Refactor into per-flavor modules (Parse::Netstat::{linux,freebsd,win32}).
 

@@ -48,15 +48,18 @@ _
             default => 'linux',
         },
         tcp => {
-            summary => 'Whether to parse TCP connections',
+            summary => 'Parse TCP connections',
+            'summary.alt.neg' => 'Do not parse TCP connections',
             schema  => [bool => default => 1],
         },
         udp => {
-            summary => 'Whether to parse UDP connections',
+            summary => 'Parse UDP connections',
+            'summary.alt.neg' => 'Do not parse UDP connections',
             schema  => [bool => default => 1],
         },
         unix => {
-            summary => 'Whether to parse Unix socket connections',
+            summary => 'Parse Unix socket connections',
+            'summary.alt.neg' => 'Do not parse Unix socket connections',
             schema  => [bool => default => 1],
         },
     },

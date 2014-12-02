@@ -19,11 +19,13 @@ $SPEC{parse_netstat} = {
     description => <<'_',
 
 This program support several flavors of netstat. The default flavor is `linux`.
-See `--flavor` on how to set flavor.
+Use `--flavor` to select which flavor you want.
 
 Since different flavors provide different fields and same-named fields might
-contain data in different format, please see the sample parse output for each
-flavor you want to support and adjust accordingly.
+contain data in different format, and also not all kinds of possible output from
+a single flavor are supported, please see the sample parse output for each
+flavor (in corresponding `Parse::Netstat::*` per-flavor module) you want to use
+and adjust accordingly.
 
 _
     args => {
@@ -44,17 +46,6 @@ _
             summary => 'Flavor of netstat',
             schema  => ['str*', in => ['linux', 'solaris', 'freebsd', 'win32']],
             default => 'linux',
-            description => <<'_',
-
-For Linux, it supports the output of `netstat -an` or `netstat -anp`.
-
-For FreeBSD, it supports `netstat` or `netstat -an`.
-
-For Solaris, it supports `netstat`.
-
-For Windows, it supports `netstat` or `netstat -an` or `netstat -anp`.
-
-_
         },
         tcp => {
             summary => 'Whether to parse TCP connections',

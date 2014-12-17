@@ -104,7 +104,7 @@ sub parse_netstat {
 }
 
 1;
-# ABSTRACT: Parse the output of Windows "netstat" command
+# ABSTRACT: 
 
 =head1 SYNOPSIS
 

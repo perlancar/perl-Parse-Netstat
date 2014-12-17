@@ -101,7 +101,7 @@ sub parse_netstat {
 }
 
 1;
-# ABSTRACT: Parse netstat output
+# ABSTRACT: 
 
 =head1 SYNOPSIS
 

@@ -104,7 +104,7 @@ sub parse_netstat {
 }
 
 1;
-# ABSTRACT: Parse the output of Linux "netstat" command
+# ABSTRACT: 
 
 =head1 SYNOPSIS
 

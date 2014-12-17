@@ -127,7 +127,7 @@ sub parse_netstat {
 }
 
 1;
-# ABSTRACT: Parse the output of Solaris "netstat" command
+# ABSTRACT: 
 
 =head1 SYNOPSIS
 

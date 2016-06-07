@@ -5,7 +5,7 @@ use strict;
 use warnings;
 use FindBin '$Bin';
 
-use File::Slurp::Tiny qw(read_file);
+use File::Slurper qw(read_text);
 use Parse::Netstat qw(parse_netstat);
 use Test::More 0.98;
 
@@ -60,7 +60,7 @@ sub test_parse {
 }
 
 subtest "linux" => sub {
-    my $data = read_file("$Bin/../share/netstat-samples/netstat-anp-linux");
+    my $data = read_text("$Bin/../share/netstat-samples/netstat-anp-linux");
     test_parse(name=>'all'    , data=>$data, args=>{flavor=>"linux"},          num_tcp=>10, num_udp=>4, num_unix=>3);
     test_parse(name=>'no tcp' , data=>$data, args=>{flavor=>"linux", tcp=>0},  num_tcp=>0 , num_udp=>4, num_unix=>3);
     test_parse(name=>'no udp' , data=>$data, args=>{flavor=>"linux", udp=>0},  num_tcp=>10, num_udp=>0, num_unix=>3);
@@ -68,7 +68,7 @@ subtest "linux" => sub {
 };
 
 subtest "freebsd" => sub {
-    my $data = read_file("$Bin/../share/netstat-samples/netstat-an-freebsd-10.1");
+    my $data = read_text("$Bin/../share/netstat-samples/netstat-an-freebsd-10.1");
     test_parse(name=>'all'    , args=>{flavor=>"freebsd"},          data=>$data, num_tcp=>23, num_udp=>13, num_unix=>27);
     test_parse(name=>'no tcp' , args=>{flavor=>"freebsd", tcp=>0},  data=>$data, num_tcp=> 0, num_udp=>13, num_unix=>27);
     test_parse(name=>'no udp' , args=>{flavor=>"freebsd", udp=>0},  data=>$data, num_tcp=>23, num_udp=> 0, num_unix=>27);
@@ -76,7 +76,7 @@ subtest "freebsd" => sub {
 };
 
 subtest "solaris" => sub {
-    my $data = read_file("$Bin/../share/netstat-samples/netstat-n-solaris");
+    my $data = read_text("$Bin/../share/netstat-samples/netstat-n-solaris");
     test_parse(name=>'all'    , args=>{flavor=>"solaris"},          data=>$data, num_tcp=>6, num_udp=>3, num_unix=>11);
     test_parse(name=>'no tcp' , args=>{flavor=>"solaris", tcp=>0},  data=>$data, num_tcp=>0, num_udp=>3, num_unix=>11);
     test_parse(name=>'no udp' , args=>{flavor=>"solaris", udp=>0},  data=>$data, num_tcp=>6, num_udp=>0, num_unix=>11);
@@ -84,7 +84,7 @@ subtest "solaris" => sub {
 };
 
 subtest "win32" => sub {
-    my $data = read_file("$Bin/../share/netstat-samples/netstat-anp-win32");
+    my $data = read_text("$Bin/../share/netstat-samples/netstat-anp-win32");
     test_parse(name=>'all'   , args=>{flavor=>"win32"},         data=>$data, num_tcp=>4, num_udp=>2);
     test_parse(name=>'no tcp', args=>{flavor=>"win32", tcp=>0}, data=>$data, num_tcp=>0, num_udp=>2);
     test_parse(name=>'no udp', args=>{flavor=>"win32", udp=>0}, data=>$data, num_tcp=>4, num_udp=>0);

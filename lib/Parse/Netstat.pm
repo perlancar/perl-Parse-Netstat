@@ -101,7 +101,7 @@ sub parse_netstat {
 }
 
 1;
-# ABSTRACT: 
+# ABSTRACT:
 
 =head1 SYNOPSIS
 
@@ -113,4 +113,4 @@ sub parse_netstat {
 
 Parse::Netstat::* for per-flavor notes and sample outputs.
 
-L<App::ParseNetstat> provides a CLI for this module.
+L<parse-netstat> from L<App::ParseNetstat> is a CLI for this module.

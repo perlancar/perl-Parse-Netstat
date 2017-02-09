@@ -59,10 +59,12 @@ sub parse_netstat {
     for my $line (split /^/, $output) {
         $i++;
         my %k;
-        if ($line =~ /^tcp/ && $tcp) {
+        if ($line =~ /^Registered kernel control modules/) {
+            $in_unix = 0;
+        } elsif ($line =~ /^tcp/ && $tcp) {
             #Proto Recv-Q Send-Q Local Address               Foreign Address             State       PID/Program name
             #tcp4       0      0 192.168.1.33.632       192.168.1.10.2049      CLOSED
-            $line =~ m!^(?P<proto>tcp[46]?) \s+ (?P<recvq>\d+) \s+ (?P<sendq>\d+)\s+
+            $line =~ m!^(?P<proto>tcp(?:4|6|46)?) \s+ (?P<recvq>\d+) \s+ (?P<sendq>\d+)\s+
                        (?P<local_host>\S+?)[:.](?P<local_port>\w+)\s+
                        (?P<foreign_host>\S+?)[:.](?P<foreign_port>\w+|\*)\s+
                        (?P<state>\S+) (?: \s+ (?:
@@ -74,7 +76,7 @@ sub parse_netstat {
         } elsif ($line =~ /^udp/ && $udp) {
             #Proto Recv-Q Send-Q Local Address          Foreign Address        (state)
             #udp4       0      0 *.879                  *.*
-            $line =~ m!^(?P<proto>udp[46]?) \s+ (?P<recvq>\d+) \s+ (?P<sendq>\d+) \s+
+            $line =~ m!^(?P<proto>udp(?:4|6|46)?) \s+ (?P<recvq>\d+) \s+ (?P<sendq>\d+) \s+
                        (?P<local_host>\S+?)[:.](?P<local_port>\w+|\*)\s+
                        (?P<foreign_host>\S+?)[:.](?P<foreign_port>\w+|\*)
                        (?: \s+
@@ -103,7 +105,7 @@ sub parse_netstat {
         } elsif ($in_unix_header) {
             $in_unix_header = 0;
             $in_unix++;
-        } elsif ($line =~ /^Active UNIX domain sockets/) {
+        } elsif ($line =~ /^Active (UNIX|LOCAL \(UNIX\)) domain sockets/) {
             $in_unix_header++;
         } else {
             next;
@@ -115,7 +117,7 @@ sub parse_netstat {
 }
 
 1;
-# ABSTRACT: 
+# ABSTRACT:
 
 =head1 SYNOPSIS
 

@@ -44,7 +44,7 @@ _
         },
         flavor => {
             summary => 'Flavor of netstat',
-            schema  => ['str*', in => ['linux', 'solaris', 'freebsd', 'win32']],
+            schema  => ['str*', in => ['linux', 'solaris', 'freebsd', 'darwin', 'win32']],
             default => 'linux',
         },
         tcp => {
@@ -86,6 +86,10 @@ sub parse_netstat {
     } elsif ($flavor eq 'freebsd') {
         require Parse::Netstat::freebsd;
         Parse::Netstat::freebsd::parse_netstat(
+            output=>$output, tcp=>$tcp, udp=>$udp, unix=>$unix);
+    } elsif ($flavor eq 'darwin') {
+        require Parse::Netstat::darwin;
+        Parse::Netstat::darwin::parse_netstat(
             output=>$output, tcp=>$tcp, udp=>$udp, unix=>$unix);
     } elsif ($flavor eq 'solaris') {
         require Parse::Netstat::solaris;

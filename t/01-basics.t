@@ -75,12 +75,12 @@ subtest "freebsd" => sub {
     test_parse(name=>'no unix', args=>{flavor=>"freebsd", unix=>0}, data=>$data, num_tcp=>23, num_udp=>13, num_unix=> 0);
 };
 
-subtest "freebsd-mac" => sub {
-    my $data = read_text("$Bin/../share/netstat-samples/netstat-an-freebsd-mac");
-    test_parse(name=>'all'    , args=>{flavor=>"freebsd"},          data=>$data, num_tcp=>3, num_udp=>3, num_unix=>4);
-    test_parse(name=>'no tcp' , args=>{flavor=>"freebsd", tcp=>0},  data=>$data, num_tcp=>0, num_udp=>3, num_unix=>4);
-    test_parse(name=>'no udp' , args=>{flavor=>"freebsd", udp=>0},  data=>$data, num_tcp=>3, num_udp=>0, num_unix=>4);
-    test_parse(name=>'no unix', args=>{flavor=>"freebsd", unix=>0}, data=>$data, num_tcp=>3, num_udp=>3, num_unix=>0);
+subtest "darwin" => sub {
+    my $data = read_text("$Bin/../share/netstat-samples/netstat-an-darwin");
+    test_parse(name=>'all'    , args=>{flavor=>"darwin"},          data=>$data, num_tcp=>3, num_udp=>3, num_unix=>4);
+    test_parse(name=>'no tcp' , args=>{flavor=>"darwin", tcp=>0},  data=>$data, num_tcp=>0, num_udp=>3, num_unix=>4);
+    test_parse(name=>'no udp' , args=>{flavor=>"darwin", udp=>0},  data=>$data, num_tcp=>3, num_udp=>0, num_unix=>4);
+    test_parse(name=>'no unix', args=>{flavor=>"darwin", unix=>0}, data=>$data, num_tcp=>3, num_udp=>3, num_unix=>0);
 };
 
 subtest "solaris" => sub {

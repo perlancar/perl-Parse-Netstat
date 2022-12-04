@@ -1,14 +1,14 @@
 package Parse::Netstat;
 
-# DATE
-# VERSION
-
 use 5.010001;
 use strict;
 use warnings;
 
-require Exporter;
-our @ISA = qw(Exporter);
+use Exporter 'import';
+
+# DATE
+# VERSION
+
 our @EXPORT_OK = qw(parse_netstat);
 
 our %SPEC;
@@ -18,7 +18,7 @@ $SPEC{parse_netstat} = {
     summary => 'Parse the output of "netstat" command',
     description => <<'_',
 
-This program support several flavors of netstat. The default flavor is `linux`.
+This utility support several flavors of netstat. The default flavor is `linux`.
 Use `--flavor` to select which flavor you want.
 
 Since different flavors provide different fields and same-named fields might
@@ -33,7 +33,7 @@ _
             summary => 'Output of netstat command',
             description => <<'_',
 
-This function only parses program's output. You need to invoke "netstat" on your
+This utility only parses program's output. You need to invoke "netstat" on your
 own.
 
 _
